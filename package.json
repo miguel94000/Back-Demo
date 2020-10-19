@@ -1,0 +1,27 @@
+{
+  "name": "test-npm",
+  "version": "1.0.0",
+  "description": "c'est un test",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "dev" : "nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/miguel94000/express-server.git"
+  },
+  "author": "miguel",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/miguel94000/express-server/issues"
+  },
+  "homepage": "https://github.com/miguel94000/express-server#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.5"
+  }
+}
