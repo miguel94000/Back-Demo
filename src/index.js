@@ -1,6 +1,7 @@
 // Import des modèles déclarés dans la solution
 require("./modele/db")
 require("./modele/user")
+require("./modele/userProfil")
 
 // Déclaration du serveur
 const express = require('express');
