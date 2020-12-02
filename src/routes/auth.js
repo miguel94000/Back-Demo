@@ -3,6 +3,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const User = mongoose.model("User");
 const UserProfil = mongoose.model("UserProfil");
+const nodemailer = require("nodemailer");
 const router = express.Router();
 const jwt = require("jsonwebtoken"); // Librairie utilisée pour la gestion de token
 
@@ -32,7 +33,7 @@ router.post("/signin", async (req, res) => {
     const userProfil = await UserProfil.findOne({ userId: user._id });
 
     // Renvoie du user et du token
-    res.status(200).send({ token, user, userProfil });
+    return res.status(200).send({ token, user, userProfil });
   } catch (err) {
     return res.status(422).send({ error: "Email ou mot de passe invalide" });
   }
@@ -76,18 +77,14 @@ router.post("/savechangesprofil", async (req, res) => {
     // Mise à jour coté mongoose
     const userProfil = await UserProfil.findOne({ userId: payload.userId });
     await userProfil.save();
-    return res.status(200).send({userProfil, token});
+    return res.status(200).send({ userProfil, token });
   });
 });
 
 // Pour la sauvegarde l'avatar du profil
 router.post("/saveavatarprofil", async (req, res) => {
-  const {
-    avatar,
-    token,
-  } = req.body;
-  
-  console.log("TOOOKEN", token)
+  const { avatar, token } = req.body;
+
   // extration du userId du token
   jwt.verify(token, "MY_SECRET_KEY", async (err, payload) => {
     if (err) {
@@ -107,8 +104,70 @@ router.post("/saveavatarprofil", async (req, res) => {
     // Mise à jour coté mongoose
     const userProfil = await UserProfil.findOne({ userId: payload.userId });
     await userProfil.save();
-    return res.status(200).send({userProfil, token});
+    return res.status(200).send({ userProfil, token });
   });
+});
+
+// Pour mettre à jour le mot de passe
+router.post("/passwordupdate", async (req, res) => {
+  const { oldPassword, newPassword, token } = req.body;
+
+  // Check du token
+  jwt.verify(token, "MY_SECRET_KEY", async (err, payload) => {
+    if (err) {
+      return res.status(401).send({ error: "Problème de token" });
+    }
+
+    // Comparaison avec le mot de passe actuel
+    const user = await User.findOne({ _id: payload.userId });
+    console.log("UN USER", user);
+    try {
+      await user.comparePassword(oldPassword);
+    } catch (error) {
+      return res
+        .status(422)
+        .send({ error: "Votre mot de passe actuel est incorrecte" });
+    }
+
+    // Mise à jour des informations dans la BDD
+    await User.updateOne(
+      {
+        _id: payload.userId,
+      },
+      {
+        password: newPassword,
+      }
+    );
+
+    // Mise à jour coté mongoose
+    await user.save();
+    return res.status(200).send({ token });
+  });
+});
+
+// Réinitialisation du mot de passe
+router.post("/restore_password", async (req, res) => {
+  const { email } = req.body;
+
+  // retrouver le mail
+  try {
+    const user = await User.findOne({ email: email });
+  } catch (error) {
+    return res
+      .status(422)
+      .send({ error: "L'email est inconnue" });
+  }
+
+  // Génération d'un mot de passe aléatoire
+  await User.updateOne(
+    {
+      password: newPassword,
+    }
+  );
+
+  // Mise à jour coté mongoose
+  await user.save();
+  return res.status(200).send({ token });
 });
 
 // Remonte les informations sur le profil
@@ -124,11 +183,11 @@ router.get("/get_user_profil", async (req, res) => {
       return res.status(401).send({ error: "Problème de token" });
     }
     const userProfil = await UserProfil.findOne({ userId: payload.userId });
-    console.log("UserProfil", userProfil);
+    // console.log("UserProfil", userProfil);
     if (!userProfil) {
       return res.status(422).send({ error: "Utilisateur non trouvé en BDD" });
     } else {
-      res.status(200).send({ token, userProfil });
+      return res.status(200).send({ token, userProfil });
     }
   });
 });
